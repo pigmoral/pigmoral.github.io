@@ -1,0 +1,476 @@
+---
+.title = "Boot Linux kernel in K1 through fastboot",
+.date = @date("2025-05-08T14:43:00"),
+.author = "Junhui Liu",
+.layout = "post.shtml",
+.draft = false,
+---
+
+This introduces how to boot Linux kernel in SpacemiT K1 through fastboot.
+
+First, build the mainline kernel and prepare an initramfs image.
+
+Then, boot K1 into the vendor's U-Boot and press `s` to stop the autoboot
+process:
+```
+U-Boot SPL 2022.10spacemit (Sep 07 2024 - 07:32:27 +0000)
+[   0.197] DDR type LPDDR4X
+[   0.208] lpddr4_silicon_init consume 11ms
+[   0.209] Change DDR data rate to 2400MT/s
+[   0.313] Boot from fit configuration k1-x_deb1
+[   0.315] ## Checking hash(es) for config conf_2 ... OK
+[   0.320] ## Checking hash(es) for Image uboot ... crc32+ OK
+[   0.331] ## Checking hash(es) for Image fdt_2 ... crc32+ OK
+[   0.352] ## Checking hash(es) for config config_1 ... OK
+[   0.354] ## Checking hash(es) for Image opensbi ... crc32+ OK
+[   0.390]
+
+U-Boot 2022.10spacemit (Sep 07 2024 - 07:32:27 +0000), Build: jenkins-BianbuBuild-bianbu-linux-527
+
+[   0.397] CPU:   rv64imafdcv
+[   0.400] Model: spacemit k1-x deb1 board
+[   0.404] DRAM:  DDR size = 4096 MB
+[   0.407] DDR size = 4096 MB
+[   0.410] DDR size = 4096 MB
+[   0.413] 4 GiB
+[   0.481] reset driver probe start
+[   0.483] reset driver probe finish
+[   0.495] DCDC_REG1@dcdc1: enabling
+[   0.495] DCDC_REG2@dcdc2: enabling
+[   0.499] DCDC_REG3@dcdc3: enabling
+[   0.502] DCDC_REG4@dcdc4: enabling
+[   0.505] DCDC_REG5@dcdc5: enabling
+[   0.509] DCDC_REG6@dcdc6: enabling
+[   0.512] LDO_REG1@ldo1: enabling
+[   0.515] LDO_REG2@ldo2: enabling
+[   0.518] LDO_REG3@ldo3: enabling
+[   0.521] LDO_REG4@ldo4: enabling
+[   0.524] LDO_REG5@ldo5: enabling
+[   0.528] LDO_REG6@ldo6: enabling
+[   0.531] LDO_REG7@ldo7: enabling
+[   0.534] LDO_REG8@ldo8: enabling
+[   0.537] LDO_REG9@ldo9: enabling
+[   0.540] LDO_REG10@ldo10: enabling
+[   0.543] LDO_REG11@ldo11: enabling
+[   0.547] SWITCH_REG1@switch1: enabling
+[   0.555] DDR size = 4096 MB
+[   0.558] Core:  403 devices, 29 uclasses, devicetree: board
+[   0.571] WDT:   Started PMIC_WDT with servicing (60s timeout)
+[   0.576] WDT:   Started watchdog@D4080000 with servicing (60s timeout)
+[   0.584] MMC:   sdh@d4280000: probe done.
+[   0.592] sdh@d4281000: probe done.
+[   0.592] sdh@d4280000: 0, sdh@d4281000: 2
+[   0.596] Loading Environment from MMC... sdh@d4281000: 74 clk wait timeout(100)
+[   0.758] OK
+[   0.765] Now init Rterm...
+[   0.765] pcie prot id = 1, porta_init_done = 0
+[   0.769] Now waiting portA resister tuning done...
+[   0.774] porta redonly_reg2: 00006d37
+[   0.777] pcie_rcal = 0x00006d37
+[   0.780] pcie port id = 1, lane num = 2
+[   0.784] Now int init_puphy...
+[   0.787] waiting pll lock...
+[   0.790] Now finish init_puphy....
+[   0.793] pcie_dw_k1x pcie@ca400000: Unable to get phy0
+[   0.798] pcie_dw_k1x pcie@ca400000: Unable to get phy1
+[   1.904] PCIE-0: Link down
+[   1.958] Found device 'hdmi@c0400500', disp_uc_priv=000000007dec8210
+[   2.069] HDMI cannot get HPD signal
+[   2.069] spacemit_display_init: device 'dpu@c0340000' display won't probe (ret=-1)
+[   2.076] initialize_console_log_buffer
+[   2.080] Have allocated memory for console log buffer
+[   2.085] In:    serial
+[   2.087] Out:   serial
+[   2.090] Err:   serial
+[   2.093] Default to 100kHz
+[   2.110] EEPROM: TlvInfo v1 len=43
+[   2.110] valid ethaddr: fe:fe:fe:5b:47:1a
+[   2.114] Serial number is valid.
+[   2.117] Cannot find TLV data: part#
+[   2.121] Cannot find TLV data: manufacture_date
+[   2.125] Cannot find TLV data: manufacturer
+[   2.129] Cannot find TLV data: device_version
+[   2.133] Cannot find TLV data: sdk_version
+[   2.242] HDMI cannot get HPD signal
+[   2.242] display devices not found or not probed yet: -1
+[   2.248] Read PMIC reg ab value f0
+[   2.252] sdh@d4280000: 74 clk wait timeout(100)
+[   2.255] MMC: no card present
+[   2.258] mmc_init: -123, time 7
+[   2.282] 77 bytes read in 3 ms (24.4 KiB/s)
+[   2.283] ## Info: input data size = 78 = 0x4E
+[   2.287] load env_k1-x.txt from bootfs successful
+[   2.292] Net:   RGMII interface
+[   2.295] eth0: ethernet@cac80000
+[   2.300] Autoboot in 0 seconds
+=> [   2.311] sssssssssss
+```
+
+Start the fastboot server in the U-Boot shell:
+```
+=> fastboot usb 0
+```
+
+Now, use the `fastboot` command to boot the kernel on the host machine:
+```sh
+-> % sudo fastboot boot \
+        arch/riscv/boot/Image \
+        initrd.img \
+        --header-version 2 \
+        --dtb arch/riscv/boot/dts/spacemit/k1-bananapi-f3.dtb \
+        --kernel-offset 0x10000000 \
+        --cmdline "earlyprintk console=ttyS0,115200 loglevel=8"
+```
+
+Here is the complete output:
+
+Host:
+```
+-> % sudo fastboot boot \
+        arch/riscv/boot/Image \
+        initrd.img \
+        --header-version 2 \
+        --dtb arch/riscv/boot/dts/spacemit/k1-bananapi-f3.dtb \
+        --kernel-offset 0x10000000 \
+        --cmdline "earlyprintk console=ttyS0,115200 loglevel=8"
+< waiting for any device >
+creating boot image...
+creating boot image - 31408128 bytes
+Sending 'boot.img' (30672 KB)                      OKAY [  0.883s]
+Booting                                            OKAY [  0.000s]
+Finished. Total time: 0.933s
+```
+
+Device:
+```
+U-Boot SPL 2022.10spacemit (Sep 07 2024 - 07:32:27 +0000)
+[   0.197] DDR type LPDDR4X
+[   0.208] lpddr4_silicon_init consume 11ms
+[   0.209] Change DDR data rate to 2400MT/s
+[   0.313] Boot from fit configuration k1-x_deb1
+[   0.315] ## Checking hash(es) for config conf_2 ... OK
+[   0.320] ## Checking hash(es) for Image uboot ... crc32+ OK
+[   0.331] ## Checking hash(es) for Image fdt_2 ... crc32+ OK
+[   0.352] ## Checking hash(es) for config config_1 ... OK
+[   0.354] ## Checking hash(es) for Image opensbi ... crc32+ OK
+[   0.390]
+
+U-Boot 2022.10spacemit (Sep 07 2024 - 07:32:27 +0000), Build: jenkins-BianbuBuild-bianbu-linux-527
+
+[   0.397] CPU:   rv64imafdcv
+[   0.400] Model: spacemit k1-x deb1 board
+[   0.404] DRAM:  DDR size = 4096 MB
+[   0.407] DDR size = 4096 MB
+[   0.410] DDR size = 4096 MB
+[   0.413] 4 GiB
+[   0.481] reset driver probe start
+[   0.483] reset driver probe finish
+[   0.495] DCDC_REG1@dcdc1: enabling
+[   0.495] DCDC_REG2@dcdc2: enabling
+[   0.499] DCDC_REG3@dcdc3: enabling
+[   0.502] DCDC_REG4@dcdc4: enabling
+[   0.505] DCDC_REG5@dcdc5: enabling
+[   0.509] DCDC_REG6@dcdc6: enabling
+[   0.512] LDO_REG1@ldo1: enabling
+[   0.515] LDO_REG2@ldo2: enabling
+[   0.518] LDO_REG3@ldo3: enabling
+[   0.521] LDO_REG4@ldo4: enabling
+[   0.524] LDO_REG5@ldo5: enabling
+[   0.528] LDO_REG6@ldo6: enabling
+[   0.531] LDO_REG7@ldo7: enabling
+[   0.534] LDO_REG8@ldo8: enabling
+[   0.537] LDO_REG9@ldo9: enabling
+[   0.540] LDO_REG10@ldo10: enabling
+[   0.543] LDO_REG11@ldo11: enabling
+[   0.547] SWITCH_REG1@switch1: enabling
+[   0.555] DDR size = 4096 MB
+[   0.558] Core:  403 devices, 29 uclasses, devicetree: board
+[   0.571] WDT:   Started PMIC_WDT with servicing (60s timeout)
+[   0.576] WDT:   Started watchdog@D4080000 with servicing (60s timeout)
+[   0.584] MMC:   sdh@d4280000: probe done.
+[   0.592] sdh@d4281000: probe done.
+[   0.592] sdh@d4280000: 0, sdh@d4281000: 2
+[   0.596] Loading Environment from MMC... sdh@d4281000: 74 clk wait timeout(100)
+[   0.758] OK
+[   0.765] Now init Rterm...
+[   0.765] pcie prot id = 1, porta_init_done = 0
+[   0.769] Now waiting portA resister tuning done...
+[   0.774] porta redonly_reg2: 00006d37
+[   0.777] pcie_rcal = 0x00006d37
+[   0.780] pcie port id = 1, lane num = 2
+[   0.784] Now int init_puphy...
+[   0.787] waiting pll lock...
+[   0.790] Now finish init_puphy....
+[   0.793] pcie_dw_k1x pcie@ca400000: Unable to get phy0
+[   0.798] pcie_dw_k1x pcie@ca400000: Unable to get phy1
+[   1.904] PCIE-0: Link down
+[   1.958] Found device 'hdmi@c0400500', disp_uc_priv=000000007dec8210
+[   2.069] HDMI cannot get HPD signal
+[   2.069] spacemit_display_init: device 'dpu@c0340000' display won't probe (ret=-1)
+[   2.076] initialize_console_log_buffer
+[   2.080] Have allocated memory for console log buffer
+[   2.085] In:    serial
+[   2.087] Out:   serial
+[   2.090] Err:   serial
+[   2.093] Default to 100kHz
+[   2.110] EEPROM: TlvInfo v1 len=43
+[   2.110] valid ethaddr: fe:fe:fe:5b:47:1a
+[   2.114] Serial number is valid.
+[   2.117] Cannot find TLV data: part#
+[   2.121] Cannot find TLV data: manufacture_date
+[   2.125] Cannot find TLV data: manufacturer
+[   2.129] Cannot find TLV data: device_version
+[   2.133] Cannot find TLV data: sdk_version
+[   2.242] HDMI cannot get HPD signal
+[   2.242] display devices not found or not probed yet: -1
+[   2.248] Read PMIC reg ab value f0
+[   2.252] sdh@d4280000: 74 clk wait timeout(100)
+[   2.255] MMC: no card present
+[   2.258] mmc_init: -123, time 7
+[   2.282] 77 bytes read in 3 ms (24.4 KiB/s)
+[   2.283] ## Info: input data size = 78 = 0x4E
+[   2.287] load env_k1-x.txt from bootfs successful
+[   2.292] Net:   RGMII interface
+[   2.295] eth0: ethernet@cac80000
+[   2.300] Autoboot in 0 seconds
+=> [   2.311] sssssssssss<INTERRUPT>
+=> [   3.519] fastboot usb 0
+k1xci_udc: phy_init
+[   9.767] k1xci_udc probe
+[   9.768] k1xci_udc: pullup 1
+[   9.774] -- suspend --
+[  10.007] handle setup GET_DESCRIPTOR, 0x80, 0x6 index 0x0 value 0x100 length 0x40
+[  10.127] handle setup SET_ADDRESS, 0x0, 0x5 index 0x0 value 0xd length 0x0
+[  10.143] handle setup GET_DESCRIPTOR, 0x80, 0x6 index 0x0 value 0x100 length 0x12
+[  10.148] handle setup GET_DESCRIPTOR, 0x80, 0x6 index 0x0 value 0x200 length 0x9
+[  10.155] handle setup GET_DESCRIPTOR, 0x80, 0x6 index 0x0 value 0x200 length 0x20
+[  10.162] handle setup GET_DESCRIPTOR, 0x80, 0x6 index 0x0 value 0x300 length 0xff
+[  10.170] handle setup GET_DESCRIPTOR, 0x80, 0x6 index 0x409 value 0x302 length 0xff
+[  10.177] handle setup GET_DESCRIPTOR, 0x80, 0x6 index 0x409 value 0x301 length 0xff
+[  10.185] handle setup GET_DESCRIPTOR, 0x80, 0x6 index 0x409 value 0x303 length 0xff
+[  10.193] handle setup SET_CONFIGURATION, 0x0, 0x9 index 0x0 value 0x1 length 0x0
+[  10.200] handle setup GET_DESCRIPTOR, 0x80, 0x6 index 0x409 value 0x302 length 0xff
+[  10.207] handle setup GET_DESCRIPTOR, 0x80, 0x6 index 0x409 value 0x304 length 0xff
+[  10.239] handle setup GET_DESCRIPTOR, 0x80, 0x6 index 0x0 value 0x300 length 0x4
+[  10.243] handle setup GET_DESCRIPTOR, 0x80, 0x6 index 0x409 value 0x304 length 0xff
+[  10.284] handle setup GET_DESCRIPTOR, 0x80, 0x6 index 0x0 value 0x300 length 0x4
+[  10.288] handle setup GET_DESCRIPTOR, 0x80, 0x6 index 0x409 value 0x304 length 0xff
+[  10.874] Starting download of 31408128 bytes
+[  10.879] ..........................................................................
+[  11.153] ..........................................................................
+[  11.423] ..........................................................................
+[  11.694] .................
+[  11.755] downloading/uploading of 31408128 bytes finished
+[  11.758] Booting kernel at 0x0000000011000000...
+
+
+[  11.762] ## Booting Android Image at 0x11000000 ...
+[  11.767] Kernel load addr 0x20000000 size 23651 KiB
+[  11.772] Kernel command line: earlyprintk console=ttyS0,115200 loglevel=8
+[  11.779] RAM disk load addr 0x11000000 size 7007 KiB
+[  11.784]    Loading Kernel Image
+[  11.798]    Loading Ramdisk to 7d6c8000, end 7dd9f85f ... OK
+[  11.803]    Loading Device Tree to 000000007d6c2000, end 000000007d6c77b9 ... OK
+
+Starting kernel ...
+
+[    0.000000] Booting Linux on hartid 0
+[    0.000000] Linux version 6.15.0-rc2 (xxx) (riscv64-linux-gnu-gcc (GCC) 14.2.0, GNU ld (GNU Binutils) 2.43.1) #1 SMP Wed Apr 16 10:56:48 CST 2025
+[    0.000000] Machine model: Banana Pi BPI-F3
+[    0.000000] SBI specification v1.0 detected
+[    0.000000] SBI implementation ID=0x1 Version=0x10003
+[    0.000000] SBI IPI extension detected
+[    0.000000] SBI RFENCE extension detected
+[    0.000000] efi: UEFI not found.
+[    0.000000] OF: reserved mem: 0x000000007f000000..0x000000007fffffff (16384 KiB) map non-reusable framebuffer@7f000000
+[    0.000000] OF: reserved mem: 0x0000000000000000..0x000000000007ffff (512 KiB) nomap non-reusable mmode_resv0@0
+[    0.000000] Zone ranges:
+[    0.000000]   DMA32    [mem 0x0000000000000000-0x00000000ffffffff]
+[    0.000000]   Normal   [mem 0x0000000100000000-0x000000017fffffff]
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x0000000000000000-0x000000000007ffff]
+[    0.000000]   node   0: [mem 0x0000000000080000-0x000000007fffffff]
+[    0.000000]   node   0: [mem 0x0000000100000000-0x000000017fffffff]
+[    0.000000] Initmem setup node 0 [mem 0x0000000000000000-0x000000017fffffff]
+[    0.000000] SBI HSM extension detected
+[    0.000000] riscv: base ISA extensions acdfimv
+[    0.000000] riscv: ELF capabilities acdfimv
+[    0.000000] Ticket spinlock: enabled
+[    0.000000] percpu: Embedded 22 pages/cpu s49832 r8192 d32088 u90112
+[    0.000000] pcpu-alloc: s49832 r8192 d32088 u90112 alloc=22*4096
+[    0.000000] pcpu-alloc: [0] 0 [0] 1 [0] 2 [0] 3 [0] 4 [0] 5 [0] 6 [0] 7
+[    0.000000] Kernel command line: earlyprintk console=ttyS0,115200 loglevel=8
+[    0.000000] Unknown kernel command line parameters "earlyprintk", will be passed to user space.
+[    0.000000] printk: log buffer data + meta data: 131072 + 458752 = 589824 bytes
+[    0.000000] Dentry cache hash table entries: 524288 (order: 10, 4194304 bytes, linear)
+[    0.000000] Inode-cache hash table entries: 262144 (order: 9, 2097152 bytes, linear)
+[    0.000000] software IO TLB: area num 8.
+[    0.000000] software IO TLB: mapped [mem 0x00000000796c2000-0x000000007d6c2000] (64MB)
+[    0.000000] Virtual kernel memory layout:
+[    0.000000]       fixmap : 0xffffffc4fea00000 - 0xffffffc4ff000000   (6144 kB)
+[    0.000000]       pci io : 0xffffffc4ff000000 - 0xffffffc500000000   (  16 MB)
+[    0.000000]      vmemmap : 0xffffffc500000000 - 0xffffffc600000000   (4096 MB)
+[    0.000000]      vmalloc : 0xffffffc600000000 - 0xffffffd600000000   (  64 GB)
+[    0.000000]      modules : 0xffffffff0178f000 - 0xffffffff80000000   (2024 MB)
+[    0.000000]       lowmem : 0xffffffd600000000 - 0xffffffd780000000   (6144 MB)
+[    0.000000]       kernel : 0xffffffff80000000 - 0xffffffffffffffff   (2047 MB)
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 1048576
+[    0.000000] mem auto-init: stack:all(zero), heap alloc:off, heap free:off
+[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=8, Nodes=1
+[    0.000000] rcu: Hierarchical RCU implementation.
+[    0.000000] rcu:     RCU restricting CPUs from NR_CPUS=64 to nr_cpu_ids=8.
+[    0.000000] rcu:     RCU debug extended QS entry/exit.
+[    0.000000]  Tracing variant of Tasks RCU enabled.
+[    0.000000] rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
+[    0.000000] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=8
+[    0.000000] RCU Tasks Trace: Setting shift to 3 and lim to 1 rcu_task_cb_adjust=1 rcu_task_cpu_ids=8.
+[    0.000000] NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
+[    0.000000] riscv-intc: 64 local interrupts mapped
+[    0.000000] riscv: providing IPIs using SBI IPI extension
+[    0.000000] rcu: srcu_init: Setting srcu_struct sizes based on contention.
+[    0.000000] clocksource: riscv_clocksource: mask: 0xffffffffffffffff max_cycles: 0x588fe9dc0, max_idle_ns: 440795202592 ns
+[    0.000000] sched_clock: 64 bits at 24MHz, resolution 41ns, wraps every 4398046511097ns
+[    0.000009] riscv-timer: Timer interrupt in S-mode is available via sstc extension
+[    0.000223] Console: colour dummy device 80x25
+[    0.000282] Calibrating delay loop (skipped), value calculated using timer frequency.. 48.00 BogoMIPS (lpj=96000)
+[    0.000294] pid_max: default: 32768 minimum: 301
+[    0.000411] LSM: initializing lsm=capability
+[    0.000591] Mount-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000613] Mountpoint-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.020143] riscv: ELF compat mode unsupported
+[    0.020170] ASID allocator using 16 bits (65536 entries)
+[    0.020344] rcu: Hierarchical SRCU implementation.
+[    0.020348] rcu:     Max phase no-delay instances is 1000.
+[    0.020569] Timer migration: 1 hierarchy levels; 8 children per group; 1 crossnode level
+[    0.024179] EFI services will not be available.
+[    0.024639] smp: Bringing up secondary CPUs ...
+[    0.045903] smp: Brought up 1 node, 8 CPUs
+[    0.047112] Memory: 3986116K/4194304K available (10301K kernel code, 4958K rwdata, 4096K rodata, 2308K init, 470K bss, 203668K reserved, 0K cma-reserved)
+[    0.048933] devtmpfs: initialized
+[    0.051660] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+[    0.051690] posixtimers hash table entries: 4096 (order: 5, 131072 bytes, linear)
+[    0.051780] futex hash table entries: 2048 (order: 5, 131072 bytes, linear)
+[    0.052146] pinctrl core: initialized pinctrl subsystem
+[    0.052768] DMI not present or invalid.
+[    0.053188] NET: Registered PF_NETLINK/PF_ROUTE protocol family
+[    0.053566] DMA: preallocated 512 KiB GFP_KERNEL pool for atomic allocations
+[    0.053651] DMA: preallocated 512 KiB GFP_KERNEL|GFP_DMA32 pool for atomic allocations
+[    0.053701] audit: initializing netlink subsys (disabled)
+[    0.054004] audit: type=2000 audit(0.052:1): state=initialized audit_enabled=0 res=1
+[    0.054395] thermal_sys: Registered thermal governor 'step_wise'
+[    0.054452] cpuidle: using governor menu
+[    0.076284] cpu3: Ratio of byte access time to unaligned word access is 2.33, unaligned accesses are fast
+[    0.076284] cpu1: Ratio of byte access time to unaligned word access is 2.31, unaligned accesses are fast
+[    0.076284] cpu2: Ratio of byte access time to unaligned word access is 2.45, unaligned accesses are fast
+[    0.076284] cpu5: Ratio of byte access time to unaligned word access is 1.78, unaligned accesses are fast
+[    0.076284] cpu6: Ratio of byte access time to unaligned word access is 1.76, unaligned accesses are fast
+[    0.076284] cpu4: Ratio of byte access time to unaligned word access is 1.60, unaligned accesses are fast
+[    0.076284] cpu7: Ratio of byte access time to unaligned word access is 1.76, unaligned accesses are fast
+[    0.100325] cpu0: Ratio of byte access time to unaligned word access is 10.52, unaligned accesses are fast
+[    0.100420] vector unaligned access speed set to '(null)' by command line
+[    0.102951] HugeTLB: allocation took 0ms with hugepage_allocation_threads=2
+[    0.102960] HugeTLB: allocation took 0ms with hugepage_allocation_threads=2
+[    0.102988] HugeTLB: registered 64.0 KiB page size, pre-allocated 0 pages
+[    0.102991] HugeTLB: 0 KiB vmemmap can be freed for a 64.0 KiB page
+[    0.102996] HugeTLB: registered 2.00 MiB page size, pre-allocated 0 pages
+[    0.102999] HugeTLB: 28 KiB vmemmap can be freed for a 2.00 MiB page
+[    0.103855] ACPI: Interpreter disabled.
+[    0.103971] iommu: Default domain type: Translated
+[    0.103976] iommu: DMA domain TLB invalidation policy: strict mode
+[    0.104980] SCSI subsystem initialized
+[    0.105201] libata version 3.00 loaded.
+[    0.105365] usbcore: registered new interface driver usbfs
+[    0.105400] usbcore: registered new interface driver hub
+[    0.105433] usbcore: registered new device driver usb
+[    0.105955] Advanced Linux Sound Architecture Driver Initialized.
+[    0.106860] vgaarb: loaded
+[    0.107248] clocksource: Switched to clocksource riscv_clocksource
+[    0.107865] pnp: PnP ACPI: disabled
+[    0.115760] NET: Registered PF_INET protocol family
+[    0.115986] IP idents hash table entries: 65536 (order: 7, 524288 bytes, linear)
+[    0.119505] tcp_listen_portaddr_hash hash table entries: 2048 (order: 4, 65536 bytes, linear)
+[    0.119577] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    0.119598] TCP established hash table entries: 32768 (order: 6, 262144 bytes, linear)
+[    0.119799] TCP bind hash table entries: 32768 (order: 9, 2097152 bytes, linear)
+[    0.121830] TCP: Hash tables configured (established 32768 bind 32768)
+[    0.122019] UDP hash table entries: 2048 (order: 6, 327680 bytes, linear)
+[    0.122281] UDP-Lite hash table entries: 2048 (order: 6, 327680 bytes, linear)
+[    0.122793] NET: Registered PF_UNIX/PF_LOCAL protocol family
+[    0.123472] RPC: Registered named UNIX socket transport module.
+[    0.123482] RPC: Registered udp transport module.
+[    0.123485] RPC: Registered tcp transport module.
+[    0.123488] RPC: Registered tcp-with-tls transport module.
+[    0.123491] RPC: Registered tcp NFSv4.1 backchannel transport module.
+[    0.123506] PCI: CLS 0 bytes, default 64
+[    0.124757] workingset: timestamp_bits=46 max_order=20 bucket_order=0
+[    0.125492] Unpacking initramfs...
+[    0.125814] NFS: Registering the id_resolver key type
+[    0.125854] Key type id_resolver registered
+[    0.125859] Key type id_legacy registered
+[    0.125896] nfs4filelayout_init: NFSv4 File Layout Driver Registering...
+[    0.125903] nfs4flexfilelayout_init: NFSv4 Flexfile Layout Driver Registering...
+[    0.126179] 9p: Installing v9fs 9p2000 file system support
+[    0.126527] NET: Registered PF_ALG protocol family
+[    0.126619] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 245)
+[    0.126875] io scheduler mq-deadline registered
+[    0.126881] io scheduler kyber registered
+[    0.126945] io scheduler bfq registered
+[    0.128589] riscv-plic: interrupt-controller@e0000000: mapped 159 interrupts with 8 handlers for 16 contexts.
+[    0.129888] SBI CPPC extension NOT detected!!
+[    0.176745] Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
+[    0.178639] printk: legacy console [ttyS0] disabled
+[    0.178962] d4017000.serial: ttyS0 at MMIO 0xd4017000 (irq = 12, base_baud = 928562) is a XScale
+[    0.179000] printk: legacy console [ttyS0] enabled
+[    0.334934] Freeing initrd memory: 7004K
+[    1.112950] loop: module loaded
+[    1.115486] e1000e: Intel(R) PRO/1000 Network Driver
+[    1.118322] e1000e: Copyright(c) 1999 - 2015 Intel Corporation.
+[    1.124803] usbcore: registered new interface driver uas
+[    1.129565] usbcore: registered new interface driver usb-storage
+[    1.135757] mousedev: PS/2 mouse device common for all mice
+[    1.141523] sdhci: Secure Digital Host Controller Interface driver
+[    1.147241] sdhci: Copyright(c) Pierre Ossman
+[    1.151600] Synopsys Designware Multimedia Card Interface Driver
+[    1.157659] sdhci-pltfm: SDHCI platform and OF driver helper
+[    1.163413] usbcore: registered new interface driver usbhid
+[    1.168765] usbhid: USB HID core driver
+[    1.172836] riscv-pmu-sbi: SBI PMU extension is available
+[    1.177999] riscv-pmu-sbi: 16 firmware and 18 hardware counters
+[    1.185363] NET: Registered PF_INET6 protocol family
+[    1.189981] Segment Routing with IPv6
+[    1.192522] In-situ OAM (IOAM) with IPv6
+[    1.196432] sit: IPv6, IPv4 and MPLS over IPv4 tunneling driver
+[    1.202825] NET: Registered PF_PACKET protocol family
+[    1.207416] 9pnet: Installing 9P2000 support
+[    1.211643] Key type dns_resolver registered
+[    1.215870] start plist test
+[    1.221237] end plist test
+[    1.234522] debug_vm_pgtable: [debug_vm_pgtable         ]: Validating architecture page table helpers
+[    1.241966] clk: Disabling unused clocks
+[    1.245028] PM: genpd: Disabling unused power domains
+[    1.250009] ALSA device list:
+[    1.25293[    1.257476] Freeing unused kernel image (initmem) memory: 2308K
+[    1.260846] Run /init as init process
+[    1.264429]   with arguments:
+[    1.267368]     /init
+[    1.269613]     earlyprintk
+[    1.272398]   with environment:
+[    1.275523]     HOME=/
+[    1.277859]     TERM=linux
+Loading, please wait...
+Starting systemd-udevd version 255.4-1ubuntu8bb2
+Begin: Loading essential drivers ... done.
+Begin: Running /scripts/init-premount ... done.
+Begin: Mounting root file system ... Begin: Running /scripts/local-top ... done.
+Begin: Running /scripts/local-premount ... done.
+No root device specified. Boot arguments must include a root= parameter.
+
+
+BusyBox v1.36.1 (Ubuntu 1:1.36.1-6ubuntu3.1) built-in shell (ash)
+Enter 'help' for a list of built-in commands.
+
+(initramfs) uname -a
+Linux (none) 6.15.0-rc2 #1 SMP Wed Apr 16 10:56:48 CST 2025 riscv64 GNU/Linux
+(initramfs)
+```

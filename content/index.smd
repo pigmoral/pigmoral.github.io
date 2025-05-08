@@ -1,0 +1,13 @@
+---
+.title = "Homepage",
+.date = @date("2025-04-27T00:00:00"),
+.author = "Junhui Liu",
+.layout = "index.shtml",
+.draft = false,
+---
+
+This is my homepage, sharing my journey in the world of computer
+science and electronics.
+
+Also, I am going to markdown some of my recipes here (Apparently not yet
+started).

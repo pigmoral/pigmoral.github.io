@@ -1,0 +1,9 @@
+---
+.title = "Blog",
+.date = @date("2025-04-27T00:00:00"),
+.author = "Junhui Liu",
+.layout = "blog.shtml",
+.draft = false,
+---
+
+Here are some of my blog posts.

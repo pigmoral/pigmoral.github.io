@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+  <head id="head">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title :text="$site.title"></title>
+    <link type="text/css" rel="stylesheet" href="$site.asset('style.css').link()">
+    <super>
+  </head>
+  <body id="body">
+    <h1 class="site-title" :text="$site.title"></h1>
+    <nav>
+      <a href="$site.page('').link()">Home</a>
+       &nbsp; • &nbsp;
+      <a href="$site.page('blog').link()">Blog</a>
+       &nbsp; • &nbsp;
+      <a href="$site.page('about').link()">About</a>
+       &nbsp; • &nbsp;
+      <a href="https://github.com/pigmoral" target="_blank">Github</a>
+    </nav>
+    <super>
+    <footer>
+      <hr>
+      <div>
+        <span>Powered by
+          <a href="https://zine-ssg.io/" target="_blank">Zine</a></span>
+      </div>
+      <div>
+        <span>© 2025 Junhui Liu</span>
+      </div>
+    </footer>
+  </body>
+</html>
