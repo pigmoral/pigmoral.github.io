@@ -1,0 +1,61 @@
+---
+.title = "Running Anlogic TD on Apple Silicon through UTM",
+.date = @date("2025-05-21T21:09:00"),
+.author = "Junhui Liu",
+.layout = "post.shtml",
+.draft = false,
+---
+
+Recording the process of running Anlogic Tang Dynasty (TD) on Apple Silicon through UTM.
+
+## 1. Preparation
+
+Before starting, make sure you have already installed UTM and installed a debian with Rosetta
+support referencing this [guide](https://docs.getutm.app/guides/debian).
+
+After following the guide, you should have Rosetta support in your UTM Debian VM, which can be
+verified by:
+
+```sh
+debian@debian-sid:~$ cat /proc/sys/fs/binfmt_misc/rosetta
+enabled
+interpreter /media/rosetta/rosetta
+flags: POCF
+offset 0
+magic 7f454c4602010100000000000000000002003e00
+mask fffffffffffefe00fffffffffffffffffeffffff
+```
+
+## 2. Install Anlogic TD
+
+You should download the Anlogic TD from https://www.anlogic.com/ to your VM, and unzip it.
+
+When you try to run the `bin/td.sh` script, you should get errors.
+
+Now, let's install the dependencies:
+
+```sh
+sudo apt install libc6:amd64 libgtk2.0-0:amd64 \
+    libsm6:amd64 libxcb-glx0:amd64 \
+    libx11-xcb1:amd64 libgl1:amd64
+```
+
+## 3. Run Anlogic TD
+
+Now, you can run the `td.sh` script and it should work.
+
+```sh
+debian@debian-sid:~/Tools/TD_5.6.5_SP3_151449_NL$ ./bin/td.sh
+============================================================
+   Tang Dynasty, V5.6.151449
+      Copyright (c) 2012-2025 Anlogic Inc.
+   Executable = /home/debian/Tools/TD_5.6.5_SP3_151449_NL/bin/td
+   Built by =   debian
+   Built at =   21:04, Feb 27
+   Run by =     debian
+   Run Date =   Wed May 21 21:08:44 2025
+
+   Run on =     debian-sid
+============================================================
+td >
+```
