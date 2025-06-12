@@ -1,0 +1,47 @@
+---
+.title = "Use pbcopy in SSH sessions",
+.date = @date("2025-06-12T16:33:00"),
+.author = "Junhui Liu",
+.layout = "post.shtml",
+.draft = false,
+---
+
+`pbcopy` is a very convenient command to copy text to the clipboard on macOS,
+but it is not available in Linux, making it inconvenient to copy text from
+remote servers to the local clipboard, like:
+
+```sh
+$ cat tmp.txt | pbcopy
+```
+
+With the OSC 52 escape sequence, we can copy text to the local clipboard in SSH
+sessions. Just add this to `~/.bashrc` or `~/.zshrc`:
+
+```sh
+pbcopy () {
+    if [ $# -gt 0 ]
+    then
+        data="$*"
+    else
+        data="$(cat)"
+    fi
+    encoded=$(printf '%s' "$data" | base64)
+    if [ -n "$TMUX" ]
+    then
+        printf '\033Ptmux;\033\033]52;c;%s\a\033\\' "$encoded" > /dev/tty
+    else
+        printf '\033]52;c;%s\a' "$encoded" > /dev/tty
+    fi
+}
+```
+
+This works as long as your terminal supports OSC 52.
+
+To let this work in Tmux, you need to add the following to `~/.tmux.conf`:
+
+```
+set-option -g allow-passthrough on
+```
+
+References:
+- [tty-copy](https://github.com/jirutka/tty-copy)
