@@ -6,11 +6,11 @@
 .draft = false,
 ---
 
-I fount that when I exit from a SSH session on my server, the server running in
+I found that when I exit from a SSH session on my server, the server running in
 Podman becomes invalid.
 
 After searching, I found that this is because the Podman containers are started
-by normal users, and systemd loginctl will kill user processors when the users
+by normal users, and systemd loginctl will kill user processes when the users
 logout.
 
 To check, run:
@@ -29,7 +29,7 @@ and I got this:
 To fix this, we can enable the linger for the user, which will take care of the
 user processes when the user logs out:
 ```sh
-loginctl enable-linger [USER...]
+$ loginctl enable-linger [USER...]
 ```
 
 Run `loginctl list-users` again:
@@ -40,7 +40,7 @@ Run `loginctl list-users` again:
 1 users listed.
 ```
 
-You can now quit without worrying about you containers.
+You can now quit without worrying about your containers.
 
 References:
 - https://jiajunhuang.com/articles/2025_04_02-podman_rootless_exited.md.html
