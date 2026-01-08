@@ -32,6 +32,13 @@ jobs:
       - name: Build
         run: zine release
 
+      - name: Generate the sitemap
+        id: sitemap
+        uses: cicirello/generate-sitemap@v1
+        with:
+          base-url-path: https://pigmoral.tech/
+          path-to-root: public
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
