@@ -1,0 +1,165 @@
+---
+.title = "lore ♥️ lei ♥️ aerc",
+.date = @date("2026-01-08T11:26:00"),
+.author = "Junhui Liu",
+.layout = "post.shtml",
+.draft = false,
+---
+
+在尝试了 `[neo]mutt`, `himalaya` 等 CLI 邮件客户端后，我最终选择了 [aerc](https://aerc-mail.org/) 作为我的邮件客户端。
+aerc 提供几乎开箱即用的配置方式，同时还有着原生的类 vim 快捷键，非常适合我这种懒(得配置的)人使用。
+同时 aerc 还支持 Maildir，我们可以拉取邮件列表里的邮件并使用 aerc 来查阅和回复。
+
+## 1. 安装
+
+大多数的发行版都提供了 aerc 的包，我们可以直接使用包管理器安装：
+
+```sh
+# Arch Linux
+sudo pacman -S aerc
+
+# Debian/Ubuntu
+sudo apt install aerc
+
+# Fedora
+sudo dnf install aerc
+
+# macOS
+brew install aerc
+```
+
+## 2. 配置个人邮箱
+
+直接运行 `aerc` 命令并按照提示填写，我们就能完成最基本的邮箱账号配置。
+
+但由于 aerc 支持 Maildir，我们完全可以用其他的工具来拉取（offlineimap）和发送邮件（msmtp）。
+
+offlineimap 和 msmtp 的配置大家可以参考 ArchWiki：
+- https://wiki.archlinux.org/title/OfflineIMAP
+- https://wiki.archlinux.org/title/Msmtp
+
+同时给出我的配置，仅供参考：
+
+```sh
+$ cat ~/.offlineimaprc
+[general]
+accounts = pigmoral
+
+[Account pigmoral]
+localrepository = pigmoral-local
+remoterepository = pigmoral-remote
+
+[Repository pigmoral-local]
+type = Maildir
+localfolders = ~/Mail/pigmoral
+
+[Repository pigmoral-remote]
+type = IMAP
+remotehost = imappro.zoho.com
+remoteuser = junhui.liu@pigmoral.tech
+remotepass = 不给你看，嘻嘻
+sslcacertfile = /etc/ssl/certs/ca-certificates.crt
+```
+
+```sh
+$ cat ~/.msmtprc
+# Set default values for all following accounts.
+defaults
+auth           on
+tls            on
+tls_trust_file /etc/ssl/certs/ca-certificates.crt
+logfile        ~/.msmtp.log
+
+# Zoho
+account        pigmoral
+host           smtppro.zoho.com
+port           465
+tls_starttls   off
+from           junhui.liu@pigmoral.tech
+user           junhui.liu@pigmoral.tech
+password       不给你看，嘻嘻
+
+# Set a default account
+account default: pigmoral
+```
+
+配置好 offlineimap 和 msmtp 后，就可以在 aerc 的配置里面调用这两个工具了：
+
+```sh
+$ cat ~/.config/aerc/accounts.conf
+[Pigmoral]
+source = maildir://~/Mail/pigmoral
+outgoing = msmtp -a pigmoral
+check-mail = 5m
+check-mail-timeout = 1m
+check-mail-cmd = offlineimap -a pigmoral
+default = INBOX
+from = Junhui Liu <junhui.liu@pigmoral.tech>
+signature-file = ~/.config/aerc/signature.txt
+```
+
+其中，`signature-file` 存放的是发送邮件时默认的签名，可以按需修改：
+
+```sh
+$ cat ~/.config/aerc/signature.txt
+Best regards,
+Junhui Liu
+```
+
+## 3. 拉取邮件列表
+
+既然 aerc 支持 Maildir，那我们能配置的就不只是个人邮箱，我们可以把邮件列表里的邮件拉取到本地再使用 aerc 来浏览以及回复。
+
+要拉取邮件列表里的邮件，我们需要使用 `lei` (https://public-inbox.org) 工具。
+
+由于我主要参与 RISC-V 的相关开发工作，我比较关注 linux-riscv, opensbi, 以及 u-boot 的邮件列表，通过以下命令进行配置：
+
+```sh
+$ lei q -I https://lore.kernel.org/all/ -o ~/Mail/lore/linux-riscv --dedupe=mid \
+      'l:linux-riscv@lists.infradead.org AND rt:1.month.ago..'
+
+$ lei q -I https://lore.kernel.org/all/ -o ~/Mail/lore/opensbi --dedupe=mid \
+      'l:opensbi@archiver.kernel.org AND rt:1.month.ago..'
+
+$ lei q -I https://lore.kernel.org/all/ -o ~/Mail/lore/u-boot --dedupe=mid \
+      'l:u-boot@lists.denx.de AND rt:1.month.ago..'
+```
+
+`lei q` 命令会在 lore 中匹配相应的邮件并拉取下来，日后我们只需要使用 `lei up --all` 命令来更新邮件列表。
+
+现在我们可以配置 aerc 来访问拉取下来的邮件了：
+
+```sh
+$ cat ~/.config/aerc/accounts.conf
+...
+
+[Lore]
+source = maildir://~/Mail/lore
+outgoing = msmtp -a pigmoral
+check-mail = 10m
+check-mail-timeout = 1m
+check-mail-cmd = lei up --all
+default = linux-riscv
+from = Junhui Liu <junhui.liu@pigmoral.tech>
+signature-file = ~/.config/aerc/signature.txt
+```
+
+## 4. 开始使用
+
+按照前文的流程完成配置，输入 `aerc`，如无意外我们就能看到邮件了。
+
+以下为一些常用快捷键：
+
+| 快捷键             | 功能                                       |
+| :----------------- | :----------------------------------------- |
+| `j`                | （邮件）下移                               |
+| `k`                | （邮件）上移                               |
+| `J`                | （目录）下移                               |
+| `K`                | （目录）上移                               |
+| `Enter`            | 打开邮件                                   |
+| `:reply -a -q`     | （打开邮件后）回复邮件（所有人、引用回复） |
+| `Ctrl` + `n`       | 下一个 Tab                                 |
+| `Ctrl` + `p`       | 上一个 Tab                                 |
+| `:check-mail`      | 检查邮件                                   |
+| `:help keys`       | 查看快捷键                                 |
+| `q`                | 退出                                       |

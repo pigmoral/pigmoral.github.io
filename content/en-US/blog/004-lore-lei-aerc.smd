@@ -1,0 +1,167 @@
+---
+.title = "lore ♥️ lei ♥️ aerc",
+.date = @date("2026-01-08T11:26:00"),
+.author = "Junhui Liu",
+.layout = "post.shtml",
+.draft = false,
+---
+
+> Translated by DeepSeek, original article: [link](https://pigmoral.tech/zh-CN/blog/004-lore-lei-aerc/)
+
+After trying CLI email clients like `[neo]mutt` and `himalaya`, I finally chose [aerc](https://aerc-mail.org/) as my email client.
+aerc provides an almost out-of-the-box configuration experience, along with native vim-like keyboard shortcuts, which is perfect for lazy people like me (who don't want to configure too much).
+Additionally, aerc supports Maildir, allowing us to fetch emails from mailing lists and use aerc to read and reply to them.
+
+## 1. Installation
+
+Most Linux distributions provide aerc packages, and we can install it directly using the package manager:
+
+```sh
+# Arch Linux
+sudo pacman -S aerc
+
+# Debian/Ubuntu
+sudo apt install aerc
+
+# Fedora
+sudo dnf install aerc
+
+# macOS
+brew install aerc
+```
+
+## 2. Configuring Personal Email
+
+By directly running the `aerc` command and following the prompts, we can complete the most basic email account configuration.
+
+However, since aerc supports Maildir, we can completely use other tools to fetch emails (offlineimap) and send emails (msmtp).
+
+For offlineimap and msmtp configurations, you can refer to ArchWiki:
+- https://wiki.archlinux.org/title/OfflineIMAP
+- https://wiki.archlinux.org/title/Msmtp
+
+Also, here are my configurations for reference:
+
+```sh
+$ cat ~/.offlineimaprc
+[general]
+accounts = pigmoral
+
+[Account pigmoral]
+localrepository = pigmoral-local
+remoterepository = pigmoral-remote
+
+[Repository pigmoral-local]
+type = Maildir
+localfolders = ~/Mail/pigmoral
+
+[Repository pigmoral-remote]
+type = IMAP
+remotehost = imappro.zoho.com
+remoteuser = junhui.liu@pigmoral.tech
+remotepass = NotShowingYou,HeHe
+sslcacertfile = /etc/ssl/certs/ca-certificates.crt
+```
+
+```sh
+$ cat ~/.msmtprc
+# Set default values for all following accounts.
+defaults
+auth           on
+tls            on
+tls_trust_file /etc/ssl/certs/ca-certificates.crt
+logfile        ~/.msmtp.log
+
+# Zoho
+account        pigmoral
+host           smtppro.zoho.com
+port           465
+tls_starttls   off
+from           junhui.liu@pigmoral.tech
+user           junhui.liu@pigmoral.tech
+password       NotShowingYou,HeHe
+
+# Set a default account
+account default: pigmoral
+```
+
+After configuring offlineimap and msmtp, we can call these two tools in aerc's configuration:
+
+```sh
+$ cat ~/.config/aerc/accounts.conf
+[Pigmoral]
+source = maildir://~/Mail/pigmoral
+outgoing = msmtp -a pigmoral
+check-mail = 5m
+check-mail-timeout = 1m
+check-mail-cmd = offlineimap -a pigmoral
+default = INBOX
+from = Junhui Liu <junhui.liu@pigmoral.tech>
+signature-file = ~/.config/aerc/signature.txt
+```
+
+The `signature-file` contains the default signature when sending emails, which can be modified as needed:
+
+```sh
+$ cat ~/.config/aerc/signature.txt
+Best regards,
+Junhui Liu
+```
+
+## 3. Fetching Mailing Lists
+
+Since aerc supports Maildir, we can configure more than just personal email accounts. We can fetch emails from mailing lists to local storage and then use aerc to browse and reply to them.
+
+To fetch emails from mailing lists, we need to use the `lei` tool (https://public-inbox.org).
+
+Since I'm mainly involved in RISC-V related development work, I pay attention to the linux-riscv, opensbi, and u-boot mailing lists. Here's how to configure them:
+
+```sh
+$ lei q -I https://lore.kernel.org/all/ -o ~/Mail/lore/linux-riscv --dedupe=mid \
+      'l:linux-riscv@lists.infradead.org AND rt:1.month.ago..'
+
+$ lei q -I https://lore.kernel.org/all/ -o ~/Mail/lore/opensbi --dedupe=mid \
+      'l:opensbi@archiver.kernel.org AND rt:1.month.ago..'
+
+$ lei q -I https://lore.kernel.org/all/ -o ~/Mail/lore/u-boot --dedupe=mid \
+      'l:u-boot@lists.denx.de AND rt:1.month.ago..'
+```
+
+The `lei q` command will match the corresponding emails in lore and fetch them. Later, we only need to use the `lei up --all` command to update the mailing lists.
+
+Now we can configure aerc to access the fetched emails:
+
+```sh
+$ cat ~/.config/aerc/accounts.conf
+...
+
+[Lore]
+source = maildir://~/Mail/lore
+outgoing = msmtp -a pigmoral
+check-mail = 10m
+check-mail-timeout = 1m
+check-mail-cmd = lei up --all
+default = linux-riscv
+from = Junhui Liu <junhui.liu@pigmoral.tech>
+signature-file = ~/.config/aerc/signature.txt
+```
+
+## 4. Getting Started
+
+After completing the configuration according to the previous steps, enter `aerc`, and if everything goes well, we should see the emails.
+
+Here are some commonly used shortcuts:
+
+| Shortcut           | Function                                   |
+| :----------------- | :----------------------------------------- |
+| `j`                | Move down (email)                          |
+| `k`                | Move up (email)                            |
+| `J`                | Move down (directory)                      |
+| `K`                | Move up (directory)                        |
+| `Enter`            | Open email                                 |
+| `:reply -a -q`     | Reply to email (all, quoted reply)         |
+| `Ctrl` + `n`       | Next Tab                                   |
+| `Ctrl` + `p`       | Previous Tab                               |
+| `:check-mail`      | Check mail                                 |
+| `:help keys`       | View shortcuts                             |
+| `q`                | Quit                                       |
