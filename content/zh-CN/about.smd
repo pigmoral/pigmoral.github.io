@@ -1,0 +1,17 @@
+---
+.title = "关于我",
+.date = @date("2025-04-27T00:00:00"),
+.author = "Junhui Liu",
+.layout = "index.shtml",
+.draft = false,
+---
+
+## 关于我
+
+我正在攻读计算机科学硕士学位，专注于计算机体系结构和系统。
+
+以下是我的一些兴趣领域：
+- Linux 内核
+- RISC-V
+- Zig
+- SpinalHDL

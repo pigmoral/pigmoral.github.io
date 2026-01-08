@@ -1,0 +1,50 @@
+---
+.title = "通过UTM在Apple Silicon上运行Anlogic TD",
+.date = @date("2025-05-21T21:09:00"),
+.author = "Junhui Liu",
+.layout = "post.shtml",
+.draft = false,
+---
+
+> 本文使用DeepSeek翻译，原文[链接](https://pigmoral.tech/blog/001-anlogic-td-on-applesilicon/)
+
+记录通过UTM在Apple Silicon上运行Anlogic Tang Dynasty (TD)的过程。
+
+## 1. 准备工作
+
+开始之前，请确保您已经安装了UTM，并参考这个[指南](https://docs.getutm.app/guides/debian)安装了支持Rosetta的Debian系统。
+
+按照指南操作后，您的UTM Debian虚拟机应该已经支持Rosetta，可以通过以下命令验证：
+
+```sh
+debian@debian-sid:~$ cat /proc/sys/fs/binfmt_misc/rosetta
+enabled
+interpreter /media/rosetta/rosetta
+flags: POCF
+offset 0
+magic 7f454c4602010100000000000000000002003e00
+mask fffffffffffefe00fffffffffffffffffeffffff
+```
+
+## 2. 安装Anlogic TD
+
+您应该从 https://www.anlogic.com/ 下载Anlogic TD到您的虚拟机，并解压缩。
+
+当您尝试运行`bin/td.sh`脚本时，可能会遇到错误。
+
+现在，让我们安装依赖项：
+
+```sh
+sudo apt install libc6:amd64 libgtk2.0-0:amd64 \
+    libsm6:amd64 libxcb-glx0:amd64 \
+    libx11-xcb1:amd64 libgl1:amd64
+```
+
+## 3. 运行Anlogic TD
+
+现在，您可以运行`td.sh`脚本，它应该可以正常工作。
+
+```sh
+debian@debian-sid:~/Tools/TD_5.6.5_SP3_151449_NL$ ./bin/td.sh
+============================================================
+   Tang Dynasty, V5.6.151449

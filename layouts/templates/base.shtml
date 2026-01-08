@@ -10,17 +10,26 @@
   <body id="body">
     <h1 class="site-title" :text="$site.title"></h1>
     <nav>
-      <a href="$site.page('').link()">Home</a>
+      <a href="$site.page('').link()" :text="$i18n.get('home')"></a>
        &nbsp; • &nbsp;
-      <a href="$site.page('blog').link()">Blog</a>
+      <a href="$site.page('blog').link()" :text="$i18n.get('blog')"></a>
        &nbsp; • &nbsp;
-      <a href="$site.page('about').link()">About</a>
+      <a href="$site.page('about').link()" :text="$i18n.get('about')"></a>
        &nbsp; • &nbsp;
       <a href="https://github.com/pigmoral" target="_blank">Github</a>
     </nav>
     <super>
     <footer>
       <hr>
+      <span :text="$i18n.get('languages_menu')"></span>
+      <div :loop="$page.locales()">
+        <a
+          href="$loop.it.link()"
+          style="white-space: nowrap;"
+          :text="$loop.it.site().localeName()"
+        ></a>
+      </div>
+      <hr style="width: 30%;">
       <div>
         <span>Powered by
           <a href="https://zine-ssg.io/" target="_blank">Zine</a></span>

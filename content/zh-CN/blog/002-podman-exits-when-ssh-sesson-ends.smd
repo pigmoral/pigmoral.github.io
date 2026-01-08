@@ -1,0 +1,46 @@
+---
+.title = "Podman在SSH会话结束时退出",
+.date = @date("2025-06-01T21:58:00"),
+.author = "Junhui Liu",
+.layout = "post.shtml",
+.draft = false,
+---
+
+> 本文使用DeepSeek翻译，原文[链接](https://pigmoral.tech/blog/002-podman-exits-when-ssh-sesson-ends/)
+
+我发现当我从服务器的SSH会话退出时，在Podman中运行的服务器会变得无效。
+
+经过搜索，我发现这是因为Podman容器是由普通用户启动的，而systemd loginctl会在用户注销时杀死用户进程。
+
+要检查这个问题，可以运行：
+```sh
+$ loginctl list-users
+```
+
+我得到了这样的结果：
+```sh
+ UID USER     LINGER
+1000 pigmoral no
+
+1 users listed.
+```
+
+要解决这个问题，我们可以为用户启用linger，这样在用户注销时会处理用户进程：
+```sh
+$ loginctl enable-linger [USER...]
+```
+
+再次运行`loginctl list-users`：
+```sh
+ UID USER     LINGER
+1000 pigmoral yes
+
+1 users listed.
+```
+
+现在您可以放心退出，不用担心容器会停止。
+
+参考资料：
+- https://jiajunhuang.com/articles/2025_04_02-podman_rootless_exited.md.html
+- https://wiki.archlinux.org/title/Systemd/User
+- https://man.archlinux.org/man/loginctl.1

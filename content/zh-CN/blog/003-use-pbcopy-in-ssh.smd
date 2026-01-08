@@ -1,0 +1,46 @@
+---
+.title = "在SSH会话中使用pbcopy",
+.date = @date("2025-06-12T16:33:00"),
+.author = "Junhui Liu",
+.layout = "post.shtml",
+.draft = false,
+---
+
+> 本文使用DeepSeek翻译，原文[链接](https://pigmoral.tech/blog/003-use-pbcopy-in-ssh/)
+
+`pbcopy`是一个在macOS上非常方便的命令，可以将文本复制到剪贴板，但在Linux中不可用，这使得从远程服务器复制文本到本地剪贴板变得不方便，例如：
+
+```sh
+$ cat tmp.txt | pbcopy
+```
+
+通过OSC 52转义序列，我们可以在SSH会话中将文本复制到本地剪贴板。只需将以下内容添加到`~/.bashrc`或`~/.zshrc`：
+
+```sh
+pbcopy () {
+    if [ $# -gt 0 ]
+    then
+        data="$*"
+    else
+        data="$(cat)"
+    fi
+    encoded=$(printf '%s' "$data" | base64)
+    if [ -n "$TMUX" ]
+    then
+        printf '\033Ptmux;\033\033]52;c;%s\a\033\\' "$encoded" > /dev/tty
+    else
+        printf '\033]52;c;%s\a' "$encoded" > /dev/tty
+    fi
+}
+```
+
+只要您的终端支持OSC 52，这个方法就有效。
+
+要让这个功能在Tmux中工作，您需要将以下内容添加到`~/.tmux.conf`：
+
+```
+set-option -g allow-passthrough on
+```
+
+参考资料：
+- [tty-copy](https://github.com/jirutka/tty-copy)

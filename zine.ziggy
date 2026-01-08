@@ -1,7 +1,21 @@
-Site {
-    .title = "Pigmoral Tech",
-    .host_url = "https://www.pigmoral.tech",
-    .content_dir_path = "content",
+Multilingual {
+    .host_url = "https://pigmoral.tech",
+    .i18n_dir_path = "i18n",
     .layouts_dir_path = "layouts",
     .assets_dir_path = "assets",
+    .locales = [
+        {
+            .code = "en-US",
+            .name = "English",
+            .site_title = "Pigmoral Tech",
+            .content_dir_path = "content/en-US",
+            .output_prefix_override = "",
+        },
+        {
+            .code = "zh-CN",
+            .name = "中文",
+            .site_title = "Pigmoral Tech",
+            .content_dir_path = "content/zh-CN",
+        },
+    ],
 }
