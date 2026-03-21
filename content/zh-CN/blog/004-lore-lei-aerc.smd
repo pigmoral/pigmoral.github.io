@@ -6,6 +6,8 @@
 .draft = false,
 ---
 
+> 2026/03/21 更新：修复了 OpenSBI 邮件列表地址，从 `opensbi@archiver.kernel.org` 改为 `opensbi@lists.infradead.org`。
+
 在尝试了 `[neo]mutt`, `himalaya` 等 CLI 邮件客户端后，我最终选择了 [aerc](https://aerc-mail.org/) 作为我的邮件客户端。
 aerc 提供几乎开箱即用的配置方式，同时还有着原生的类 vim 快捷键，非常适合我这种懒(得配置的)人使用。
 同时 aerc 还支持 Maildir，我们可以拉取邮件列表里的邮件并使用 aerc 来查阅和回复。
@@ -119,7 +121,7 @@ $ lei q -I https://lore.kernel.org/all/ -o ~/Mail/lore/linux-riscv --dedupe=mid 
       'l:linux-riscv@lists.infradead.org AND rt:1.month.ago..'
 
 $ lei q -I https://lore.kernel.org/all/ -o ~/Mail/lore/opensbi --dedupe=mid \
-      'l:opensbi@archiver.kernel.org AND rt:1.month.ago..'
+      'l:opensbi@lists.infradead.org AND rt:1.month.ago..'
 
 $ lei q -I https://lore.kernel.org/all/ -o ~/Mail/lore/u-boot --dedupe=mid \
       'l:u-boot@lists.denx.de AND rt:1.month.ago..'

@@ -8,6 +8,8 @@
 
 > Translated by DeepSeek, original article: [link](https://pigmoral.tech/zh-CN/blog/004-lore-lei-aerc/)
 
+> Updated 2026/03/21: Fixed OpenSBI mailing list address from `opensbi@archiver.kernel.org` to `opensbi@lists.infradead.org`.
+
 After trying CLI email clients like `[neo]mutt` and `himalaya`, I finally chose [aerc](https://aerc-mail.org/) as my email client.
 aerc provides an almost out-of-the-box configuration experience, along with native vim-like keyboard shortcuts, which is perfect for lazy people like me (who don't want to configure too much).
 Additionally, aerc supports Maildir, allowing us to fetch emails from mailing lists and use aerc to read and reply to them.
@@ -121,7 +123,7 @@ $ lei q -I https://lore.kernel.org/all/ -o ~/Mail/lore/linux-riscv --dedupe=mid 
       'l:linux-riscv@lists.infradead.org AND rt:1.month.ago..'
 
 $ lei q -I https://lore.kernel.org/all/ -o ~/Mail/lore/opensbi --dedupe=mid \
-      'l:opensbi@archiver.kernel.org AND rt:1.month.ago..'
+      'l:opensbi@lists.infradead.org AND rt:1.month.ago..'
 
 $ lei q -I https://lore.kernel.org/all/ -o ~/Mail/lore/u-boot --dedupe=mid \
       'l:u-boot@lists.denx.de AND rt:1.month.ago..'
