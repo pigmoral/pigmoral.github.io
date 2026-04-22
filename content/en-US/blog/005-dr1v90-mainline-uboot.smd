@@ -1,0 +1,529 @@
+---
+.title = "Mainline OpenSBI and U-Boot on DR1V90 (MLKPAI FS01 board)",
+.date = @date("2026-04-22T19:48:00"),
+.author = "Junhui Liu",
+.layout = "post.shtml",
+.draft = false,
+---
+
+> Translated by Kimi-K2.5, original article: [link](https://pigmoral.tech/zh-CN/blog/005-dr1v90-mainline-uboot/)
+
+To enable comprehensive testing of the mainline Linux Kernel on DR1V90 and facilitate development,
+I ported a version of mainline OpenSBI and U-Boot (based on the MLKPAI FS01 development board) that
+is (currently) not yet upstreamed. This U-Boot supports USB host and the RTL8152 USB network
+adapter, enabling network booting of Linux.
+
+## Preparation
+
+Create a project directory:
+
+```sh
+$ mkdir sdkproj && cd sdkproj
+$ export ROOT=$(pwd)
+```
+
+Prepare the toolchain for building FSBL:
+
+```sh
+$ wget https://download.nucleisys.com/upload/files/toolchain/gcc/nuclei_riscv_newlibc_prebuilt_linux64_2020.08.tar.bz2
+$ tar -xf nuclei_riscv_newlibc_prebuilt_linux64_2020.08.tar.bz2
+```
+
+## FSBL
+
+Build FSBL (this SDK was organized from materials in the compressed package released by Milianke on
+their cloud drive):
+
+```sh
+$ git clone -b mlkpai-fs01 https://github.com/pigmoral/dr1v90_sdk.git
+$ cd dr1v90_sdk/FSBL
+$ make COMPILE_PREFIX=$ROOT/gcc/bin/riscv-nuclei-elf-
+```
+
+This will generate `build/FSBL.elf`.
+
+## U-Boot
+
+Build U-Boot:
+
+```sh
+$ cd $ROOT
+$ git clone -b dr1v90/init https://github.com/pigmoral/u-boot.git
+$ cd u-boot
+$ make CROSS_COMPILE=riscv64-linux-gnu- dr1v90_mlkpai_fs01_defconfig
+$ make CROSS_COMPILE=riscv64-linux-gnu-
+```
+
+This will generate `u-boot.bin` and `dts/upstream/src/riscv/anlogic/dr1v90-mlkpai-fs01.dtb`.
+
+## OpenSBI
+
+Build OpenSBI:
+
+```sh
+$ cd $ROOT
+$ git clone -b dr1v90/init https://github.com/pigmoral/opensbi.git
+$ make CROSS_COMPILE=riscv64-linux-gnu- PLATFORM=generic FW_FDT_PATH=$ROOT/u-boot/dts/upstream/src/riscv/anlogic/dr1v90-mlkpai-fs01.dtb
+```
+
+This will generate `build/platform/generic/firmware/fw_jump.bin`.
+
+## Pack
+
+First, obtain the `albg` program (this appears to be an Anlogic fork of Xilinx's bootgen project):
+
+```sh
+$ cd $ROOT
+$ mkdir packproj && cd packproj
+$ wget -O albg https://gitee.com/anlogic/sdk/raw/anlogic-linuxsdk/tools/bootgen/linux64/bin/albg1
+$ chmod +x albg
+```
+
+Prepare a packaging configuration file:
+
+```sh
+cat << 'EOF' > bootgen.bif
+/* arch=dr1v90; split=false; format=BIN */
+
+the_ROM_image:
+{
+    [
+        bootloader
+        ,destination_cpu=rpu
+    ] FSBL.elf
+    [
+        destination_cpu=rpu
+        ,load=0x0
+        ,exec=0x0
+        ,org_endian
+        ,partition_owner=fsbl
+    ] fw_jump.bin
+    [
+        destination_cpu=rpu
+        ,load=0x200000
+        ,exec=0xFFFFFFFF
+        ,org_endian
+        ,partition_owner=fsbl
+    ] u-boot.bin
+}
+EOF
+```
+
+Copy the firmware to the current directory:
+
+```sh
+$ cp $ROOT/dr1v90_sdk/FSBL/build/FSBL.elf .
+$ cp $ROOT/u-boot/u-boot.bin .
+$ cp $ROOT/opensbi/build/platform/generic/firmware/fw_jump.bin .
+```
+
+At this point, our directory should contain these files:
+
+```
+.
+├── albg
+├── bootgen.bif
+├── FSBL.elf
+├── fw_jump.bin
+└── u-boot.bin
+```
+
+Execute the packaging command:
+
+```
+$ ./albg -image ./bootgen.bif -arch dr1v90 -o ./BOOT.bin
+```
+
+This will generate `BOOT.bin`. We just need to place it in the first FAT partition of the SD card to boot.
+
+## Example
+
+Below is a successful boot log for reference:
+
+```
+[BOOT INFO] Boot Reg value       : 0x00000005
+[BOOT INFO] Boot Mode            : EMMC or SD Boot Mode
+[BOOT INFO] IDE_VERSION          : Release: 5.9.1 Build: 151508
+[BOOT INFO] Bitstream Export Time: 2025/ 3/18 16: 5
+[BOOT INFO] HPF_EXPORT_TIME      : 2025/03/21 15:36:33
+[BOOT INFO] Compile Time         : Apr 22 2026 19:29:27
+[BOOT INFO] HPF Version          : 202501
+
+[DDR INFO] DRAM 256M x16, Use DQ[15:0]
+[DDR INFO] Available Capacity 512 MB
+[DDR FW] Version 4.2
+[DDR FW] Compile Time: Feb 28 2025 14:56:31
+[DDR GPLL] fck = 666.600 MHz, fbk_div = 80, out_div = 2
+[DDR GPLL] gmc = 0 icp = 10 lpf_cap = 2 lpf_res = 4 kvco = 0
+[DDR Vref] Internal 0x10
+[DDR PPC] Enable Lane Mask = 0x3
+[DDR MDL] DX0 = 0xf700f7	6.074 ps
+[DDR MDL] DX1 = 0xf600f7	6.074 ps
+[DDR MRS] DDR3 Mode
+[DDR MRS] MR0 = 0xb40
+[DDR MRS] MR1 = 0x4
+[DDR MRS] MR2 = 0x10
+[DDR MRS] MR3 = 0x0
+[DDR WL] DX0GSR0.WLPRD = 124
+[DDR WL] Done
+[DDR GATE] DX0GSR0.GDQSPRD = 122
+[DDR GATE] Done
+[DDR WLADJ] Done
+[DDR WLADJ] DX0 WLD = 107 is close to WLPRD = 125, force WLD = 0
+[DDR TRAIN #0] RDEYE:O WREYE:O
+========================================
+DX DGSL WLSL WLD WDQD DQSGD RDQSD RDQSND
+----------------------------------------
+ 0    3    2   0   62     0    65     50
+ 1    2    2   1   60   111    67     49
+ 2    0    0   0    0     0     0      0
+ 3    0    0   0    0     0     0      0
+========================================
+==================== In Stage 1 ====================
+
+System reset
+
+PMU Error Config Init
+
+PMU Error Config Init
+
+history reset reason: 00000000
+
+history pmu status 0: 00000000
+
+history pmu status 1: 00000000
+
+mark fsbl is running...
+
+==================== In Stage 2 ====================
+
+Boot Mode: 0x00000005
+
+EMMC or SD Boot Mode
+
+multi boot offset is 0
+
+Request input clk 400000000 Hz, IO clk 50000000 Hz
+
+Response: 0x900
+
+CMD 1 send err, code: 0x18000
+
+Identify Card is SD
+
+Card support bus width 4-bit
+
+----------Card Info----------
+
+|-Device: mmc@0xF8049000
+
+|-Manufacturer ID: 0xAD
+
+|-OEM: 0x4C53
+
+|-Name: MSSD0
+
+|-Bus Speed: 50000 KHz
+
+|-Mode: high speed or sdr25
+
+|-Rd Block Len: 512
+
+|-Version: 4
+
+|-High Capacity: YES
+
+|-Capacity: 29.1GB
+
+|-Bus Width: 4-bit
+
+-----------------------------
+
+drv is sd
+
+file name is BOOT.bin
+
+FsblInstancePtr->ImageOffsetAddress: 0x0
+
+boot header copy finished...
+
+Calculated Checksum: 0x3BA233B8
+
+checksum check pass...
+
+partition headers copy finished...
+
+image header authentication not enabled....
+
+qspi width sel        : 0x00000000
+
+image id              : 0x43474C41
+
+enc status            : 0x00000000
+
+bh attribute          : 0x00000000
+
+bh ac offset          : 0x00000000
+
+first parti hdr offset: 0x00000300
+
+partition num         : 0x00000003
+
+bh checksum           : 0x3BA233B8
+
+PartitionNum: 3
+
+==================== In Stage 3 ====================
+
+wdt restart
+
+Partition Header Checksum: 0xB2B34F4E
+
+Calculated Checksum: 0xB2B34F4E
+
+checksum check pass...
+
+Hash Type: 0x00000000
+
+Hash NOT enabled.
+
+Auth Type       : 0
+
+Efuse Auth Type : 0
+
+Authentication NOT enabled...
+
+Enc Type       : 0
+
+Efuse Enc Type : 0
+
+Encrypt NOT enabled.
+
+destination cpu: 0x00000000
+
+destination dev: 0x00000000
+
+check partition length:
+
+
+Partition Header Infomation:
+
+Partition Length            : 0x00043B80
+
+Extracted Partition Length  : 0x00043B48
+
+Total Partition Length      : 0x00043B80
+
+Next Partition Header Offset: 0x00000380
+
+Dest Execution Address      : 0x0
+
+Dest Load Address           : 0x0
+
+Partition Offset            : 0x0001F580
+
+Partition Attribute         : 0x00000000
+
+Hash Data offset            : 0x00000000
+
+AC Offset                   : 0x00000000
+
+Partition Header Checksum   : 0xB2B34F4E
+
+
+
+loading ps partition...
+
+partition src address      : 0x1F580
+
+partition load dest address: 0x0
+
+partition length           : 0x00043B80
+
+Auth type :  00
+
+Hash type :  00
+
+Enc type  :  65
+
+Enc mode  :  00
+
+Key mode  :  6E
+
+ps partition copy finished
+
+Update handoff values
+
+==================== In Stage 3 ====================
+
+wdt restart
+
+Partition Header Checksum: 0x21EE14B1
+
+Calculated Checksum: 0x21EE14B1
+
+checksum check pass...
+
+Hash Type: 0x00000000
+
+Hash NOT enabled.
+
+Auth Type       : 0
+
+Efuse Auth Type : 0
+
+Authentication NOT enabled...
+
+Enc Type       : 0
+
+Efuse Enc Type : 0
+
+Encrypt NOT enabled.
+
+destination cpu: 0x00000000
+
+destination dev: 0x00000000
+
+check partition length:
+
+
+Partition Header Infomation:
+
+Partition Length            : 0x0005F600
+
+Extracted Partition Length  : 0x0005F5C9
+
+Total Partition Length      : 0x0005F600
+
+Next Partition Header Offset: 0x00000000
+
+Dest Execution Address      : 0xFFFFFFFF
+
+Dest Load Address           : 0x200000
+
+Partition Offset            : 0x00063100
+
+Partition Attribute         : 0x00000000
+
+Hash Data offset            : 0x00000000
+
+AC Offset                   : 0x00000000
+
+Partition Header Checksum   : 0x21EE14B1
+
+
+
+loading ps partition...
+
+partition src address      : 0x63100
+
+partition load dest address: 0x200000
+
+partition length           : 0x0005F600
+
+Auth type :  00
+
+Hash type :  00
+
+Enc type  :  65
+
+Enc mode  :  00
+
+Key mode  :  6E
+
+ps partition copy finished
+
+==================== In Stage 4 ====================
+
+Mark FSBL is completed...
+
+wdt disable
+
+
+OpenSBI v1.8
+   ____                    _____ ____ _____
+  / __ \                  / ____|  _ \_   _|
+ | |  | |_ __   ___ _ __ | (___ | |_) || |
+ | |  | | '_ \ / _ \ '_ \ \___ \|  _ < | |
+ | |__| | |_) |  __/ | | |____) | |_) || |_
+  \____/| .__/ \___|_| |_|_____/|____/_____|
+        | |
+        |_|
+
+Platform Name               : Milianke MLKPAI-FS01
+Platform Features           : medeleg
+Platform HART Count         : 1
+Platform HART Protection    : pmp
+Platform IPI Device         : aclint-mswi
+Platform Timer Device       : aclint-mtimer @ 800000000Hz
+Platform Console Device     : uart8250
+Platform HSM Device         : ---
+Platform PMU Device         : ---
+Platform Reboot Device      : ---
+Platform Shutdown Device    : ---
+Platform Suspend Device     : ---
+Platform CPPC Device        : ---
+Firmware Base               : 0x0
+Firmware Size               : 321 KB
+Firmware RW Offset          : 0x40000
+Firmware RW Size            : 65 KB
+Firmware Heap Offset        : 0x47000
+Firmware Heap Size          : 37 KB (total), 0 KB (reserved), 13 KB (used), 22 KB (free)
+Firmware Scratch Size       : 4096 B (total), 424 B (used), 3672 B (free)
+Runtime SBI Version         : 3.0
+Standard SBI Extensions     : time,rfnc,ipi,base,hsm,pmu,dbcn,fwft,legacy,dbtr,sse
+Experimental SBI Extensions : none
+
+Domain0 Name                : root
+Domain0 Boot HART           : 0
+Domain0 HARTs               : 0x0*
+Domain0 Region00            : 0x0000000000000000-0x000000000007ffff M: (F,R,W,X) S/U: ()
+Domain0 Region01            : 0x000000006803c000-0x000000006803cfff M: (I,R,W) S/U: ()
+Domain0 Region02            : 0x00000000f8401000-0x00000000f8401fff M: (I,R,W) S/U: (R,W)
+Domain0 Region03            : 0x0000000068038000-0x000000006803bfff M: (I,R,W) S/U: ()
+Domain0 Region04            : 0x0000000068030000-0x0000000068037fff M: (I,R,W) S/U: ()
+Domain0 Region05            : 0x000000006c000000-0x000000006fffffff M: (I,R,W) S/U: (R,W)
+Domain0 Region06            : 0x0000000000000000-0xffffffffffffffff M: () S/U: (R,W,X)
+Domain0 Next Address        : 0x0000000000200000
+Domain0 Next Arg1           : 0x0000000002200000
+Domain0 Next Mode           : S-mode
+Domain0 SysReset            : yes
+Domain0 SysSuspend          : yes
+
+Boot HART ID                : 0
+Boot HART Domain            : root
+Boot HART Priv Version      : v1.11
+Boot HART Base ISA          : rv64imafdcbp
+Boot HART ISA Extensions    : zicntr,zihpm,sdtrig
+Boot HART PMP Count         : 8
+Boot HART PMP Granularity   : 12 bits
+Boot HART PMP Address Bits  : 31
+Boot HART MHPM Info         : 4 (0x00000078)
+Boot HART Debug Triggers    : 8 triggers
+Boot HART MIDELEG           : 0x0000000000000222
+Boot HART MEDELEG           : 0x000000000000b109
+
+
+U-Boot 2026.04-g6045c8e01e5d (Apr 22 2026 - 19:31:12 +0800)
+
+DRAM:  512 MiB
+Core:  13 devices, 9 uclasses, devicetree: separate
+Loading Environment from nowhere... OK
+In:    serial@f8401000
+Out:   serial@f8401000
+Err:   serial@f8401000
+Net:   No ethernet found.
+=> usb start
+starting USB...
+USB DWC2
+Bus usb@f8180000: 2 USB Device(s) found
+=> usb tree
+USB device tree:
+  1  Hub (480 Mb/s, 0mA)
+  |   U-Boot Root Hub
+  |
+  +-2  Vendor specific (480 Mb/s, 140mA)
+       Realtek USB 10/100/1000 LAN DF1300E04C5C7120
+
+=>
+```
